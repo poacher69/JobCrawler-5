@@ -9,14 +9,16 @@ import parser.LagouCrawler;
 
 public class TaskItem {
 
+	private String key;
 	private String url;
 	private String crawler;
 	private Map<String,String> properties;
 
 	
 
-	public TaskItem(String url, String crawler, Map<String, String> properties) {
+	public TaskItem(String key,String url, String crawler, Map<String, String> properties) {
 		super();
+		this.key=key;
 		this.url = url;
 		this.crawler = crawler;
 		this.properties = properties;
@@ -45,6 +47,16 @@ public class TaskItem {
 	public void setCrawler(String crawler) {
 		this.crawler = crawler;
 	}
+
+	public String getKey() {
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+	}
+	
+	
 	
 	
 	

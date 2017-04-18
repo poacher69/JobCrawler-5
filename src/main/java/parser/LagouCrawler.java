@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpRequest;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
@@ -24,7 +25,9 @@ import org.jsoup.select.Elements;
 
 import com.alibaba.fastjson.JSON;
 
+import control.CrawlControl;
 import utils.ClientUtils;
+import utils.MongoDBUtils;
 import utils.ResultItem;
 import utils.TaskItem;
 import utils.TimeUtils;
@@ -34,7 +37,8 @@ public class LagouCrawler implements ITaskCrawl {
 	private static final String site = "Lagou";
 	private static final String companyHomeRegex = "https://www.lagou.com/gongsi/";
 	private static final Pattern companyJobListRegex = Pattern.compile("https://www.lagou.com/gongsi/j(\\d+).html");
-	private static final String jobUrlPrefix="https://www.lagou.com/jobs/%s.html";
+	private static final String jobListPrefix="https://www.lagou.com/gongsi/j%s.html";
+	private static final String jobUrlPrefix = "https://www.lagou.com/jobs/%s.html";
 	// Pattern r = Pattern.compile(pattern)
 
 	private static volatile LagouCrawler crawler;
@@ -83,16 +87,24 @@ public class LagouCrawler implements ITaskCrawl {
 		Document doc = Jsoup.parse(resHtml);
 		Elements eles = doc.getElementById("company_list").getElementsByTag("li");
 		for (Element e : eles) {
-			ResultItem ri = new ResultItem(e.getElementsByClass("item_title").first().attr("href"),site,TimeUtils.getStringTime(),"company");
+			String href = e.getElementsByClass("item_title").first().attr("href");
+			String cid = e.getElementsByClass("item_title").first().attr("data-lg-tj-cid");
+			ResultItem ri = new ResultItem(String.format("lagou_company_%s", cid), href, site,
+					TimeUtils.getStringTime(), "company");
 			Map<String, String> contentMap = new HashMap<>();
 			contentMap.put("name", e.getElementsByClass("item_title").first().attr("title"));
 			contentMap.put("detail", e.getElementsByClass("details").first().text());
 			contentMap.put("industry", e.getElementsByClass("company_state").first().child(0).attr("title"));
 			contentMap.put("stage", e.getElementsByClass("company_state").first().child(2).attr("title"));
 			contentMap.put("city", e.getElementsByClass("company_state").first().child(1).attr("title"));
-			System.out.println(JSON.toJSONString(contentMap));
 			ri.setContent(JSON.toJSONString(contentMap));
+			MongoDBUtils.getInstace().saveResultItem(ri);
+			TaskItem ti=new TaskItem(String.format("lagou_jobList_%s", cid), String.format(jobListPrefix, cid), "LagouCrawler", new HashMap<String,String>(){{
+				put("companyId", cid);
+			}});
+			CrawlControl.enqueueTask(ti);
 		}
+		
 	}
 
 	private void crawlCompanyJobList(TaskItem task) throws ClientProtocolException, IOException {
@@ -108,15 +120,14 @@ public class LagouCrawler implements ITaskCrawl {
 		Elements eles = doc.getElementsByClass("list-content").first().getElementsByClass("item_con_list").first()
 				.getElementsByTag("li");
 		for (Element e : eles) {
-			
-			ResultItem ri=new ResultItem(String.format(jobUrlPrefix, e.attr("data-positionid")), site, TimeUtils.getStringTime(), "job");
-//			Map<String, String> contentMap = new HashMap<>();
-//			contentMap.put("name", e.attr("data-positionname"));
-//			contentMap.put("salary", e.getElementsByClass("item_salary").first().text());
-//			contentMap.put(key, value);
-			
-			
-
+			TaskItem ti = new TaskItem(String.format("lagou_jobDetail_%s", e.attr("data-positionid")),
+					String.format(jobUrlPrefix, e.attr("data-positionid")), "LagouCrawler",
+					new HashMap<String, String>() {
+						{
+							put("companyId", task.getProperties().get("companyId"));
+						}
+					});
+			CrawlControl.enqueueTask(ti);
 		}
 	}
 

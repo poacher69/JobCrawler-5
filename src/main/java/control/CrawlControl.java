@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSON;
 
 import parser.ITaskCrawl;
 import utils.JedisUtil;
+import utils.TaskItem;
 
 public class CrawlControl {
 
@@ -28,7 +29,7 @@ public class CrawlControl {
 		}, 1, 1, TimeUnit.SECONDS);
 	}
 	
-	public static void enqueueTask(ITaskCrawl task){
+	public static void enqueueTask(TaskItem task){
 		JedisUtil.setListElement(queueName, JSON.toJSONString(task));
 	}
 	

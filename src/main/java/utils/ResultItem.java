@@ -12,14 +12,16 @@ import com.thoughtworks.selenium.webdriven.commands.IsSomethingSelected;
  */
 public class ResultItem {
 
+	private String key;
 	private String url;
 	private String site;
 	private String parseTime;
 	private String content;
 	private String docType;
 
-	public ResultItem(String url, String site, String parseTime, String content, String docType) {
+	public ResultItem(String key, String url, String site, String parseTime, String content, String docType) {
 		super();
+		this.key = key;
 		this.url = url;
 		this.site = site;
 		this.parseTime = parseTime;
@@ -27,12 +29,21 @@ public class ResultItem {
 		this.docType = docType;
 	}
 
-	public ResultItem(String url, String site, String parseTime, String docType) {
+	public ResultItem(String key,String url, String site, String parseTime, String docType) {
 		super();
+		this.key=key;
 		this.url = url;
 		this.site = site;
 		this.parseTime = parseTime;
 		this.docType = docType;
+	}
+
+	public String getKey() {
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
 	}
 
 	public ResultItem() {
